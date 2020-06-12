@@ -38,11 +38,6 @@ disable      : _ -> None
 """
 
 
-# TODO: Make this module thread safe!
-# TODO: Support passing global scope vars to func.
-# TODO: Support custom timers.
-
-
 import functools
 import gc
 import itertools
@@ -62,7 +57,8 @@ class Benchmarker:
 
     disabled : `bool`
         Whether or not timing measurements should be performed.
-        If false, a lot of overhead can be avoided.
+        If false, a lot of overhead can be avoided. Of course, in production
+        code the benchmarking decorators should be removed entirely.
     num_timings : `int`
         How many timing measurements to perform.
     num_calls : `int`
@@ -153,7 +149,7 @@ class Benchmarker:
 #################################
 
 
-root = Benchmarker
+_root = Benchmarker
 
 
 ########################
@@ -167,20 +163,20 @@ def basic_config(
         disable_gc=root.disable_gc
     ):
     """Configure the root benchmarker."""
-    root.disabled    = False
-    root.num_timings = num_timings
-    root.num_calls   = num_calls
-    root.disable_gc  = disable_gc
+    _root.disabled    = False
+    _root.num_timings = num_timings
+    _root.num_calls   = num_calls
+    _root.disable_gc  = disable_gc
 
 
 def disable():
     """Disable benchmarking on the root benchmarker."""
-    root.disable()
+    _root.disable()
 
 
 def enable():
     """Enable benchmarking on the root benchmarker."""
-    root.enable()
+    _root.enable()
 
 
 ##########################
@@ -188,4 +184,4 @@ def enable():
 ##########################
 
 
-timeit = root.timeit
+timeit = _root.timeit
