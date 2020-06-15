@@ -37,12 +37,10 @@ disable      : _ -> None
 
 """
 
-
 import functools
 import gc
 import itertools
 import time
-
 
 #####################
 # BENCHMARKER CLASS #
@@ -51,7 +49,7 @@ import time
 
 class Benchmarker:
     """Benchmarking timer utility.
-    
+
     Attributes
     ==========
 
@@ -68,7 +66,7 @@ class Benchmarker:
         timing measurement. Shows more accurately how much CPU time the
         function actually consumes, but in a realistic scenario the garbage
         collector would be running.
-    
+
     Methods
     =======
 
@@ -79,25 +77,25 @@ class Benchmarker:
 
     """
 
-    disabled    = False
+    disabled = False
     num_timings = 1
-    num_calls   = 1
-    disable_gc  = False
+    num_calls = 1
+    disable_gc = False
 
     @classmethod
     def disable(cls):
         """Disables all benchmarking."""
         cls.disabled = True
-    
+
     @classmethod
     def enable(cls):
         """Enables all benchmarking."""
         cls.disabled = False
 
     @staticmethod
-    def _timeit(it, func, *args, **kwargs):
+    def _timeit(iterator, func, *args, **kwargs):
         """Performs one timing measurement.
-        
+
         Arguments
         =========
 
@@ -105,22 +103,23 @@ class Benchmarker:
             Corresponds to the `num_calls` class variable.
         func : `function`
             The decorated function to benchmark.
-        
+
         Returns
         =======
 
         `int` : The time it took to perform the calls.
-        
+
         """
-        t0 = time.perf_counter()
-        for _ in it:
+        start_time = time.perf_counter()
+        for _ in iterator:
             func(*args, **kwargs)
-        t1 = time.perf_counter()
-        return t1-t0
+        end_time = time.perf_counter()
+        return end_time - start_time
 
     @classmethod
     def timeit(cls, func):
         """Decorator method for `wrapper`."""
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             """Performs a set of timing measurements."""
@@ -132,15 +131,16 @@ class Benchmarker:
                 gc.disable()
             try:
                 for _ in range(cls.num_timings):
-                    it = itertools.repeat(None, cls.num_calls)
-                    t = cls._timeit(it, func, *args, **kwargs)
-                    timings.append(t)
+                    iterator = itertools.repeat(None, cls.num_calls)
+                    timing = cls._timeit(iterator, func, *args, **kwargs)
+                    timings.append(timing)
             finally:
                 if cls.disable_gc and gcold:
                     gc.enable()
             setattr(wrapper, 'timings', timings)
             setattr(wrapper, 'time', min(timings))
             return func(*args, **kwargs)
+
         return wrapper
 
 
@@ -148,25 +148,21 @@ class Benchmarker:
 # MODULE-LEVEL ROOT BENCHMARKER #
 #################################
 
-
 _root = Benchmarker
-
 
 ########################
 # SIMPLE CONFIGURATION #
 ########################
 
 
-def basic_config(
-        num_timings=root.num_timings,
-        num_calls=root.num_calls,
-        disable_gc=root.disable_gc
-    ):
+def basic_config(num_timings=_root.num_timings,
+                 num_calls=_root.num_calls,
+                 disable_gc=_root.disable_gc):
     """Configure the root benchmarker."""
-    _root.disabled    = False
+    _root.disabled = False
     _root.num_timings = num_timings
-    _root.num_calls   = num_calls
-    _root.disable_gc  = disable_gc
+    _root.num_calls = num_calls
+    _root.disable_gc = disable_gc
 
 
 def disable():
@@ -182,6 +178,5 @@ def enable():
 ##########################
 # MODULE-LEVEL DECORATOR #
 ##########################
-
 
 timeit = _root.timeit
